@@ -32,3 +32,35 @@ else the decrypted name is your pick => wipe the key pair
 6. encryption/decryption
 7. generate derangement
 '''
+
+class User:
+    def __init__(self, ip_addr = "127.0.0.1", name = ""):
+        self.my_id = ""
+        self.my_ip = ip_addr
+        self.my_name = name
+        self.private_key_choice = None
+        self.public_key_choice = None
+        self.private_key_comm = None
+        self.public_key_comm = None
+        self.personnal_seed = 0
+        self.master_seed = 0
+        
+
+from cryptography.hazmat.primitives.asymmetric import ec
+
+
+def generate_key_pair(user, curve = ec.SECP384R1()):
+    user.private_key_choice = ec.generate_private_key(curve)
+    user.public_key_choice = private_key.public_key()
+    user.private_key_comm = ec.generate_private_key(curve)
+    user.public_key_comm = private_key.public_key()
+
+
+def encrypt_message(message, key):
+    
+    
+def broadcast_message(sockets, message):
+    for s in sockets:
+        
+
+def anonymous_comm()
