@@ -1,9 +1,10 @@
 '''
 generate/provide key pair
+share public key for anonymous comm
 generate random number (ID)
 generate a random seed (int)
 hash the number
-distribute hash+pub_key+seed to everyone
+distribute hash+pub_key+seed to everyone + HMAC later
 
 Receive all tuple
 compile all seed to master seed
@@ -32,6 +33,8 @@ else the decrypted name is your pick => wipe the key pair
 6. encryption/decryption
 7. generate derangement
 '''
+from Crypto.PublicKey import ECC
+
 
 class User:
     def __init__(self, ip_addr = "127.0.0.1", name = ""):
@@ -42,25 +45,48 @@ class User:
         self.public_key_choice = None
         self.private_key_comm = None
         self.public_key_comm = None
+        self.comm_keys = []
+        
         self.personnal_seed = 0
         self.master_seed = 0
         
-
-from cryptography.hazmat.primitives.asymmetric import ec
-
-
-def generate_key_pair(user, curve = ec.SECP384R1()):
-    user.private_key_choice = ec.generate_private_key(curve)
-    user.public_key_choice = private_key.public_key()
-    user.private_key_comm = ec.generate_private_key(curve)
-    user.public_key_comm = private_key.public_key()
-
-
-def encrypt_message(message, key):
-    
-    
-def broadcast_message(sockets, message):
-    for s in sockets:
+        self.network_node = None
         
 
-def anonymous_comm()
+
+def generate_key_pair(user, bits = 8196):
+    (publicKey, privateKey) = rsa.newkeys(bits)
+    user.private_key_choice = privateKey.save_pkcs1('PEM')
+    user.public_key_choice = publicKey.save_pkcs1('PEM')
+    
+    
+    (publicKey, privateKey) = rsa.newkeys(bits)
+    user.private_key_comm = privateKey.save_pkcs1('PEM')
+    user.public_key_comm = publicKey.save_pkcs1('PEM')
+    print("comm keys : ")
+    print(user.private_key_comm)
+    print(user.public_key_comm)
+    print("choice keys : ")
+    print(user.private_key_choice)
+    print(user.public_key_choice)
+
+#def loadKeys(pub_key, priv_key):
+#    return rsa.PublicKey.load_pkcs1(pub_key), rsa.PrivateKey.load_pkcs1(priv_key)
+
+def encrypt_message(message, pub_key):
+    return rsa.encrypt(message.encode('utf-8'), pub_key)
+    
+def decrypt_message(ciphertext, priv_key):
+    try:
+        return rsa.decrypt(ciphertext, priv_key).decode('utf-8')
+    except:
+        return False
+    
+def broadcast_message(user, message):
+    user.network_node.broadcast(message)
+
+def anonymous_comm(keys, message):
+    ciphertext = message
+    for key in keys:
+        ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(pub_key))
+    broadcast_message(b"anon" + ciphertext)
