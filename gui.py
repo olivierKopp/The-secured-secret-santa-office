@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from ttkthemes import ThemedTk
 
+from ipaddress import ip_address
 
 # Contant
 
@@ -41,7 +42,7 @@ class SecretSanta:
         entryIpAddr    = ttk.Entry(mainframe, textvariable=self.ipAddr)
         entryBlackList = ttk.Entry(mainframe, textvariable=self.blackList)
 
-        buttonValidate = ttk.Button(mainframe, text=textButtonValidate, command=funcButtonValidate)
+        buttonValidate = ttk.Button(mainframe, text=textButtonValidate, command=self.funcButtonValidate)
 
         labelIpAddr.grid(column=1, row=1)
         labelBlackList.grid(column=1, row=2)
@@ -51,11 +52,30 @@ class SecretSanta:
         buttonValidate.grid(column=2, row=5, pady=padyButtonValidate, sticky=E)
 
 
-# Functions
 
-def funcButtonValidate():
-    print("funcButtonValidate()")
-                            
+    def parseIpAddrList(self, rawIpAddr: str) -> list[str]:
+        print("Called: parseIpAddrList()")
+
+        ipAddrs = []
+
+        noSpaces = "".join(rawIpAddr.split())
+        for rawIp in noSpaces.split(','):
+            try:
+                ipAddrs.append(ip_address(rawIp))
+            except ValueError:
+                print("Error: Failed to parse IP, check your input!")
+                return []
+
+        return ipAddrs
+
+
+    def funcButtonValidate(self, *args):
+        print("Called: funcButtonValidate()")
+        print(self.parseIpAddrList(self.ipAddr.get()))
+        print(self.blackList.get())
+
+
+        
 
 # TODO: The following code is only here as a demo
 #       It must be removed at some point.
