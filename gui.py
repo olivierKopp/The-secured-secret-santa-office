@@ -29,10 +29,10 @@ class SecretSanta:
         root.columnconfigure(0, weight=1)
         root.rowconfigure(0, weight=1)
 
-        labelIpAddr = ttk.Label(mainframe, text=textLabelIpAddr)
+        labelIpAddr    = ttk.Label(mainframe, text=textLabelIpAddr)
         labelBlackList = ttk.Label(mainframe, text=textLabelBlackList)
 
-        entryIpAddr = ttk.Entry(mainframe, textvariable=self.ipAddr)
+        entryIpAddr    = ttk.Entry(mainframe, textvariable=self.ipAddr)
         entryBlackList = ttk.Entry(mainframe, textvariable=self.blackList)
 
         buttonValidate = ttk.Button(mainframe, text=textButtonValidate, command=funcButtonValidate)
