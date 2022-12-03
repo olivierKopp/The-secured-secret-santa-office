@@ -1,14 +1,19 @@
 from tkinter import *
 from tkinter import ttk
+from ttkthemes import ThemedTk
 
 
 # Contant
 
 windowTitle = "An Actually Secure Secret Santa"
 
+textButtonValidate = "Validate"
 textLabelIpAddr = "IP Address"
 textLabelBlackList = "Black List"
-textButtonValidate = "Validate"
+textLabelVictim = "You will give a present to Adel!"
+
+padyButtonValidate = '40 0'
+padyLabelVictim = '40 0'
 
 # Global
 
@@ -31,6 +36,7 @@ class SecretSanta:
 
         labelIpAddr    = ttk.Label(mainframe, text=textLabelIpAddr)
         labelBlackList = ttk.Label(mainframe, text=textLabelBlackList)
+        labelVictim    = ttk.Label(mainframe, text=textLabelVictim)
 
         entryIpAddr    = ttk.Entry(mainframe, textvariable=self.ipAddr)
         entryBlackList = ttk.Entry(mainframe, textvariable=self.blackList)
@@ -39,9 +45,10 @@ class SecretSanta:
 
         labelIpAddr.grid(column=1, row=1)
         labelBlackList.grid(column=1, row=2)
+        labelVictim.grid(column=1, columnspan=2, row=4, pady=padyLabelVictim)
         entryIpAddr.grid(column=2, row=1)
         entryBlackList.grid(column=2, row=2)
-        buttonValidate.grid(column=2, row=5, sticky=E)
+        buttonValidate.grid(column=2, row=5, pady=padyButtonValidate, sticky=E)
 
 
 # Functions
@@ -54,6 +61,6 @@ def funcButtonValidate():
 #       It must be removed at some point.
 
 # Main code
-root = Tk()
+root = ThemedTk(theme="arc")
 SecretSanta(root)
 root.mainloop()
