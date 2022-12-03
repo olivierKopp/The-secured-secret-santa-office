@@ -1,4 +1,3 @@
 # The-secured-secret-santa-office
 
-
-COUCOU
+We implement a secure secret santa protocol
