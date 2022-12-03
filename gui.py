@@ -1,8 +1,28 @@
-import tkinter as tk
+from tkinter import *
+from tkinter import ttk
 
-window = tk.Tk()
 
-greeting = tk.Label(text="Hello, World!")
-greeting.pack()
+# Contant
 
-window.mainloop()
+windowTitle = "An Actually Secure Secret Santa"
+
+# Global
+
+
+# Classes
+
+class SecretSanta:
+    def __init__(self, root):
+        root.title(windowTitle)
+
+        # some code
+        
+
+# TODO: The following code is only here as a demo
+#       It must be removed at some point.
+
+# Main code
+
+root = Tk()
+SecretSanta(root)
+root.mainloop()
