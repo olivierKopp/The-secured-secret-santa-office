@@ -28,16 +28,12 @@ class SSSONode(Node):
         print("outbound_node_disconnected: " + connected_node.id)
 
     def node_message(self, connected_node, data):
-        #print("DATA")
-        print(data)
         data = data["message"]
         try:
             data = data.encode()
         except:
             pass
-        #print(len(data))
         code = data[:4]
-        #print(code)
         try:
             code = code.decode()
         except:
@@ -54,6 +50,9 @@ class SSSONode(Node):
             case 'conf':
                 split_msg = message.split(b':')
                 if((split_msg[0], split_msg[1]) not in self.user.ids):
+                    print("RECEIVED")
+                    print(split_msg[1])
+                    print(b64decode(split_msg[1]))
                     self.user.ids.append((split_msg[0], split_msg[1]))
                     self.user.seeds.append(split_msg[2])
                     self.user.annon_messages.append(message)
@@ -85,7 +84,9 @@ def main():
     generate_key_pair(user)
     user.network_node = SSSONode(my_ip_address, 65432, user)
     user.network_node.start()
-        
+    print("SENT")
+    print(user.public_key_choice)
+    print(b64encode(user.public_key_choice))
     for ip_address in ip_addresses:
         user.network_node.connect_with_node(ip_address, 65432)
     
@@ -106,18 +107,15 @@ def main():
     user.my_id = random(4)
 
     id_hash = sha256(user.my_id, encoder=nacl.encoding.HexEncoder)
-    print(id_hash)
     user.ids.append((id_hash, user.public_key_choice))
 
     #shuffle(user.comm_keys)
     #send id + pubk + seed anonymously
     #anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
     payload = b"conf" + id_hash + b":" + b64encode(user.public_key_choice) + b":" + user.personal_seed
-    print(payload)
     user.network_node.send_to_nodes({"message" : (payload).decode('latin-1')})
     
     while(len(user.seeds) < nb_users):
-        print(user.seeds)
         user.network_node.send_to_nodes({"message" : (b"conf" + id_hash + b":" + b64encode(user.public_key_choice) + b":" + user.personal_seed).decode('latin-1')})
         time.sleep(1)
         
@@ -125,15 +123,11 @@ def main():
     seed(int.from_bytes(user.master_seed[:4], 'big'))
     
     shuffle(user.ids)
-    print(user.ids)
     
     user.network_node.send_to_nodes({"message":b"seed" + user.master_seed})
     
     position = -1
     for i in range(len(user.ids)):
-        print("INDICATIF")
-        print(user.ids[i])
-        print(id_hash)
         if(id_hash == user.ids[i][0]):
             position = i
             break
@@ -143,12 +137,10 @@ def main():
         exit(-1)
         
     derangement = random_derangement(nb_users)
-    print(derangement)
-    print(position)
     pos_to_choose = derangement[position]
     key_to_use = user.ids[pos_to_choose][1]
     
-    c = encrypt_message(user.my_id, rsa.PublicKey.load_pkcs1(key_to_use))
+    c = b64encode(encrypt_message(user.my_id, rsa.PublicKey.load_pkcs1(b64decode(key_to_use))))
     #sign the message
     #TODO
     user.network_node.send_to_nodes({"message" : (b"chse" + c).decode("latin-1")})
@@ -156,11 +148,10 @@ def main():
     
     while len(user.choices) < nb_users:
         time.sleep(1)
-        print(user.choices)
         user.network_node.send_to_nodes({"message" : (b"chse" + c).decode("latin-1")})
     
     for cipher in user.choices:
-        status,plain = decrypt_message(cipher, rsa.PrivateKey.load_pkcs1(b64decode(user.private_key_choice)))
+        status,plain = decrypt_message(b64decode(cipher), rsa.PrivateKey.load_pkcs1(user.private_key_choice))
         if status:
             user.final_id = plain
             break
@@ -176,55 +167,7 @@ def main():
     #TODO
     print("FINAL RESULT : ", end='')
     print(final_id_hash)
-
-    
-    '''        
-    for _ in range(len(ip_addresses) + 1):
-        #wait until we have all messages
-        while len(user.annon_messages) < len(ip_addresses)+1:
-            time.sleep(1)
         
-        #store the messages in a new temp array to allow new messages to be stored
-        for m in user.annon_messages:
-            user.annon_messages_tmp.append(m)
-        user.annon_messages = []
-        
-        
-        length = (user.bits//8)
-        #try to decrypt every message and send the one we can decrypt to others
-        for i in range(len(user.annon_messages_tmp)):
-            ciphertext = [user.annon_messages_tmp[i][k:k+length] for k in range(0, len(user.annon_messages_tmp[i]), length)]
-            #print(ciphertext)
-            
-            for j in range(len(ciphertext)):
-                try:
-                    ciphertext[j] = ciphertext[j].encode()
-                except:
-                    pass
-                print(ciphertext[j])
-                print(user.private_key_comm)
-                print(user.comm_keys)
-                ret,plain = decrypt_message(ciphertext[j], rsa.PrivateKey.load_pkcs1(user.private_key_comm))
-                if(not ret):
-                    print(i)
-                    print(j)
-                    break
-                ciphertext[j] = plain
-            else:
-                #we send to everyone the message we could decrypt
-                ciphertext = b''.join(ciphertext)
-                print(ciphertext)
-                user.annon_messages.append(ciphertext)
-                user.network_node.send_to_nodes({"message" : (b"annon" + ciphertext)})
-
-    
-    #wait until we have all messages
-    while len(user.annon_messages) < len(ip_addresses)+1:
-        time.sleep(1)
-    #at this point, we should have all messages decrypted
-    print(user.annon_messages)
-            
-    '''        
     input()
     user.network_node.stop()
 
