@@ -52,10 +52,12 @@ class User:
         
         self.network_node = None
         
+        self.bits = 1024
+        
 
 
-def generate_key_pair(user, bits = 1024):
-    (publicKey, privateKey) = rsa.newkeys(bits)
+def generate_key_pair(user):
+    (publicKey, privateKey) = rsa.newkeys(user.bits)
     user.private_key_choice = privateKey.save_pkcs1('PEM')
     user.public_key_choice = publicKey.save_pkcs1('PEM')
     
@@ -74,7 +76,7 @@ def generate_key_pair(user, bits = 1024):
 #    return rsa.PublicKey.load_pkcs1(pub_key), rsa.PrivateKey.load_pkcs1(priv_key)
 
 def encrypt_message(message, pub_key):
-    return rsa.encrypt(message.encode('utf-8'), pub_key)
+    return rsa.encrypt(message, pub_key)
     
 def decrypt_message(ciphertext, priv_key):
     try:
@@ -85,8 +87,10 @@ def decrypt_message(ciphertext, priv_key):
 def broadcast_message(user, message):
     user.network_node.broadcast(message)
 
-def anonymous_comm(keys, message):
+def anonymous_comm(keys, message, length):
     ciphertext = message
+    ciphertext = [ciphertext[i:i+length] for i in range(0, len(ciphertext), length)]
     for key in keys:
-        ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(pub_key))
-    broadcast_message(b"anon" + ciphertext)
+        ciphertext = [encrypt_message(ciphertext[i], rsa.PublicKey.load_pkcs1(key) for i in range(0, len(ciphertext))]
+        #ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(key))
+    broadcast_message(b"anon" + b':'.join(ciphertext))
