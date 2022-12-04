@@ -27,7 +27,7 @@ class SSSONode(Node):
 
     def node_message(self, connected_node, data):
         print("DATA")
-        data = data.message
+        data = data["message"]
         print(data)
         print(len(data))
         code = data[:4]
@@ -78,14 +78,11 @@ def main():
             user.network_node.connect_with_node(ip_address, 65432)
         time.sleep(1) # Waiting for everyone to connect before talking
     
-    user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm)})
-    
+    #waiting for everyone to share their pub key
+    user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
     while len(user.comm_keys) < len(ip_addresses)+1:
+        user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
         time.sleep(1)
-
-    for c in user.comm_keys:
-        print("KEY :",end='')
-        print(c)
 
     user.personal_seed = random()
     user.my_id = random(4)
@@ -93,10 +90,44 @@ def main():
     id_hash = sha256(user.my_id, encoder=nacl.encoding.HexEncoder)
 
     shuffle(user.comm_keys)
+    #send id + pubk + seed anonymously
     anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
-    #user.network_node.send_to_nodes((b"anon" + id_hash + user.public_key_choice + user.personal_seed))
     
+    for _ in range(len(ip_addresses) + 1):
+        #wait until we have all messages
+        while len(user.annon_messages) < len(ip_addresses)+1:
+            time.sleep(1)
+        
+        #store the messages in a new temp array to allow new messages to be stored
+        for m in user.annon_messages:
+            user.annon_messages_tmp.append(m)
+        user.annon_messages = []
+        
+        
+        length = (user.bits//8)
+        #try to decrypt every message and send the one we can decrypt to others
+        for i in range(user.annon_messages_tmp):
+            ciphertext = [user.annon_messages_tmp[i:i+length] for i in range(0, len(ciphertext), length)]
+            
+            for j in range(len(ciphertext)):
+                ret,plain = decrypt_message(ciphertext[j], rsa.PrivateKey.load_pkcs1(user.private_key_comm))
+                if(not ret):
+                    break
+                ciphertext[j] = plain
+            else
+                #we send to everyone the message we could decrypt
+                ciphertext = b''.join(ciphertext)
+                user.annon_messages.append(ciphertext)
+                user.network_node.send_to_nodes(b"annon" + ciphertext)
+
     
+    #wait until we have all messages
+    while len(user.annon_messages) < len(ip_addresses)+1:
+        time.sleep(1)
+    #at this point, we should have all messages decrypted
+    print(user.annon_messages)
+            
+            
     input()
     user.network_node.stop()
 

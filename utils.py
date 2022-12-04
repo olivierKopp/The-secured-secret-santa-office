@@ -48,6 +48,7 @@ class User:
         
         self.comm_keys = []
         self.annon_messages = []
+        self.annon_messages_tmp = []
         
         self.personnal_seed = 0
         self.master_seed = 0
@@ -82,9 +83,10 @@ def encrypt_message(message, pub_key):
     
 def decrypt_message(ciphertext, priv_key):
     try:
-        return rsa.decrypt(ciphertext, priv_key).decode('utf-8')
+        return True,rsa.decrypt(ciphertext, priv_key)
     except:
-        return False
+        print("FAIL TO DECRYPT")
+        return False, None
     
 def broadcast_message(user, message):
     user.network_node.broadcast(message)
@@ -102,5 +104,5 @@ def anonymous_comm(user, message):
     user.annon_messages.append(ciphertext)
     print("CIPHERTEXT : ", end='')
     print(ciphertext)
-    user.network_node.send_to_nodes({"message" : (b"anon" + ciphertext)})
+    user.network_node.send_to_nodes({"message" : (b"anon" + ciphertext).decode('latin-1')})
     #broadcast_message(user, b"anon" + ciphertext)
