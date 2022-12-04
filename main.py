@@ -27,6 +27,7 @@ class SSSONode(Node):
 
     def node_message(self, connected_node, data):
         print("DATA")
+        data = data.message
         print(data)
         print(len(data))
         code = data[:4]
@@ -77,7 +78,7 @@ def main():
             user.network_node.connect_with_node(ip_address, 65432)
         time.sleep(1) # Waiting for everyone to connect before talking
     
-    user.network_node.send_to_nodes((b"pubk" + user.public_key_comm))
+    user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm)})
     
     while len(user.comm_keys) < len(ip_addresses)+1:
         time.sleep(1)

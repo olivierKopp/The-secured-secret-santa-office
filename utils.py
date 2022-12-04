@@ -100,5 +100,7 @@ def anonymous_comm(user, message):
         
         #ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(key))
     user.annon_messages.append(ciphertext)
-    user.network_node.send_to_nodes(b"anon" + ciphertext)
+    print("CIPHERTEXT : ", end='')
+    print(ciphertext)
+    user.network_node.send_to_nodes({"message" : (b"anon" + ciphertext)})
     #broadcast_message(user, b"anon" + ciphertext)
