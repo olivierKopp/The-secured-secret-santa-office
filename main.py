@@ -38,7 +38,7 @@ class SSSONode(Node):
             case 'pubk':
                 if len(self.user.comm_keys) == 0:
                     self.user.comm_keys.append(self.user.public_key_comm)
-                self.user.comm_keys.append(message)
+                self.user.comm_keys.append(message.encode())
             case 'anon':
                 if len(self.user.comm_keys) == 0:
                     self.user.comm_keys.append(self.user.public_key_comm)
@@ -81,13 +81,17 @@ def main():
     while len(user.comm_keys) < len(ip_addresses)+1:
         time.sleep(1)
 
+    for c in user.comm_keys:
+        print("KEY :",end='')
+        print(c)
+
     user.personal_seed = random()
     user.my_id = random(4)
 
     id_hash = sha256(user.my_id, encoder=nacl.encoding.HexEncoder)
 
     shuffle(user.comm_keys)
-    anonymous_comm(user.comm_keys, id_hash + user.public_key_choice + user.personal_seed)
+    anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
     #user.network_node.send_to_nodes((b"anon" + id_hash + user.public_key_choice + user.personal_seed))
     
     

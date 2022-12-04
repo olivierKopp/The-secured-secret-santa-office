@@ -62,7 +62,7 @@ def generate_key_pair(user):
     user.public_key_choice = publicKey.save_pkcs1('PEM')
     
     
-    (publicKey, privateKey) = rsa.newkeys(bits)
+    (publicKey, privateKey) = rsa.newkeys(user.bits)
     user.private_key_comm = privateKey.save_pkcs1('PEM')
     user.public_key_comm = publicKey.save_pkcs1('PEM')
     print("comm keys : ")
@@ -87,10 +87,15 @@ def decrypt_message(ciphertext, priv_key):
 def broadcast_message(user, message):
     user.network_node.broadcast(message)
 
-def anonymous_comm(keys, message, length):
+def anonymous_comm(user, message):
     ciphertext = message
-    ciphertext = [ciphertext[i:i+length] for i in range(0, len(ciphertext), length)]
-    for key in keys:
-        ciphertext = [encrypt_message(ciphertext[i], rsa.PublicKey.load_pkcs1(key) for i in range(0, len(ciphertext))]
+    length = (user.bits//8)-11
+    for key in user.comm_keys:
+        ciphertext = [ciphertext[i:i+length] for i in range(0, len(ciphertext), length)]
+        #ciphertext = encrypt_message(ciphertext[0], rsa.PublicKey.load_pkcs1(key))
+        ciphertext = [encrypt_message(ciphertext[i], rsa.PublicKey.load_pkcs1(key)) for i in range(0, len(ciphertext))]
+        ciphertext = b''.join(ciphertext)
+        
         #ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(key))
-    broadcast_message(b"anon" + b':'.join(ciphertext))
+    user.network_node.send_to_nodes(b"anon" + ciphertext)
+    #broadcast_message(user, b"anon" + ciphertext)
