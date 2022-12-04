@@ -26,8 +26,11 @@ class SSSONode(Node):
         print("outbound_node_disconnected: " + connected_node.id)
 
     def node_message(self, connected_node, data):
+        print("DATA")
         print(data)
+        print(len(data))
         code = data[:4]
+        print(code)
         try:
             code = code.decode()
         except:
@@ -40,9 +43,7 @@ class SSSONode(Node):
                     self.user.comm_keys.append(self.user.public_key_comm)
                 self.user.comm_keys.append(message.encode())
             case 'anon':
-                if len(self.user.comm_keys) == 0:
-                    self.user.comm_keys.append(self.user.public_key_comm)
-                self.user.comm_keys.append(message)
+                self.user.annon_messages.append(message)
             case _:
                 print(code)
                 raise NotImplementedError("Message code unknown")

@@ -45,7 +45,9 @@ class User:
         self.public_key_choice = None
         self.private_key_comm = None
         self.public_key_comm = None
+        
         self.comm_keys = []
+        self.annon_messages = []
         
         self.personnal_seed = 0
         self.master_seed = 0
@@ -97,5 +99,6 @@ def anonymous_comm(user, message):
         ciphertext = b''.join(ciphertext)
         
         #ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(key))
+    user.annon_messages.append(ciphertext)
     user.network_node.send_to_nodes(b"anon" + ciphertext)
     #broadcast_message(user, b"anon" + ciphertext)
