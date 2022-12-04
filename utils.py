@@ -34,6 +34,7 @@ else the decrypted name is your pick => wipe the key pair
 7. generate derangement
 '''
 import rsa
+import random
 
 
 class User:

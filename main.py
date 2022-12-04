@@ -5,6 +5,7 @@ from random import shuffle
 from nacl.hash import sha256
 import nacl
 from random import seed
+from base64 import b64encode, b64decode
 
 from p2pnetwork.node import Node
 
@@ -51,14 +52,16 @@ class SSSONode(Node):
             case 'anon':
                 self.user.annon_messages.append(message)
             case 'conf':
-                split_msg = message.split(':')
-                self.user.ids.append((split_msg[0], split_msg[1]))
-                self.user.seeds.append(split_msg[2])
-                self.user.annon_messages.append(message)
+                split_msg = message.split(b':')
+                if((split_msg[0], split_msg[1]) not in self.user.ids):
+                    self.user.ids.append((split_msg[0], split_msg[1]))
+                    self.user.seeds.append(split_msg[2])
+                    self.user.annon_messages.append(message)
             case 'seed':
                 assert self.user.master_seed == message
             case 'chse':
-                assert self.user.choices.append(message)
+                if(message not in self.user.choices):
+                    self.user.choices.append(message)
             case _:
                 print(code)
                 raise NotImplementedError("Message code unknown")
@@ -91,9 +94,9 @@ def main():
         for ip_address in ip_addresses:
             user.network_node.connect_with_node(ip_address, 65432)
         time.sleep(1) # Waiting for everyone to connect before talking
-    '''
+    
     #waiting for everyone to share their pub key
-    user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
+    '''user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
     while len(user.comm_keys) < len(ip_addresses)+1:
         user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
         time.sleep(1)
@@ -103,13 +106,19 @@ def main():
     user.my_id = random(4)
 
     id_hash = sha256(user.my_id, encoder=nacl.encoding.HexEncoder)
+    print(id_hash)
+    user.ids.append((id_hash, user.public_key_choice))
 
     #shuffle(user.comm_keys)
     #send id + pubk + seed anonymously
-    anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
-    user.network_node.send_to_nodes({"message" : b"conf" + id_hash + b":" + user.public_key_choice + b":" + user.personal_seed})
+    #anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
+    payload = b"conf" + id_hash + b":" + b64encode(user.public_key_choice) + b":" + user.personal_seed
+    print(payload)
+    user.network_node.send_to_nodes({"message" : (payload).decode('latin-1')})
     
     while(len(user.seeds) < nb_users):
+        print(user.seeds)
+        user.network_node.send_to_nodes({"message" : (b"conf" + id_hash + b":" + b64encode(user.public_key_choice) + b":" + user.personal_seed).decode('latin-1')})
         time.sleep(1)
         
     user.master_seed = compile_seeds(user.seeds)
@@ -118,11 +127,14 @@ def main():
     shuffle(user.ids)
     print(user.ids)
     
-    user.send_to_nodes({"message":b"seed" + user.master_seed})
+    user.network_node.send_to_nodes({"message":b"seed" + user.master_seed})
     
     position = -1
     for i in range(len(user.ids)):
-        if(user.id_hash == user.ids[i][0])
+        print("INDICATIF")
+        print(user.ids[i])
+        print(id_hash)
+        if(id_hash == user.ids[i][0]):
             position = i
             break
             
@@ -131,20 +143,24 @@ def main():
         exit(-1)
         
     derangement = random_derangement(nb_users)
+    print(derangement)
+    print(position)
     pos_to_choose = derangement[position]
     key_to_use = user.ids[pos_to_choose][1]
     
-    c = encrypt_message(b"chse" + user.my_id, rsa.PublicKey.load_pkcs1(user.public_key_choice))
+    c = encrypt_message(user.my_id, rsa.PublicKey.load_pkcs1(key_to_use))
     #sign the message
     #TODO
-    user.network_node.send_to_nodes(c)
-    user.choices.append(c[:4])
+    user.network_node.send_to_nodes({"message" : (b"chse" + c).decode("latin-1")})
+    user.choices.append(c)
     
     while len(user.choices) < nb_users:
         time.sleep(1)
+        print(user.choices)
+        user.network_node.send_to_nodes({"message" : (b"chse" + c).decode("latin-1")})
     
     for cipher in user.choices:
-        status,plain = decrypt_message(cipher, rsa.PrivateKey.load_pkcs1(user.private_key_choice)
+        status,plain = decrypt_message(cipher, rsa.PrivateKey.load_pkcs1(b64decode(user.private_key_choice)))
         if status:
             user.final_id = plain
             break
