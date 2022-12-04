@@ -4,6 +4,7 @@ from nacl.utils import random
 from random import shuffle
 from nacl.hash import sha256
 import nacl
+from random import seed
 
 from p2pnetwork.node import Node
 
@@ -49,6 +50,15 @@ class SSSONode(Node):
                     self.user.comm_keys.append(self.user.public_key_comm)
             case 'anon':
                 self.user.annon_messages.append(message)
+            case 'conf':
+                split_msg = message.split(':')
+                self.user.ids.append((split_msg[0], split_msg[1]))
+                self.user.seeds.append(split_msg[2])
+                self.user.annon_messages.append(message)
+            case 'seed':
+                assert self.user.master_seed == message
+            case 'chse':
+                assert self.user.choices.append(message)
             case _:
                 print(code)
                 raise NotImplementedError("Message code unknown")
@@ -65,7 +75,7 @@ def main():
     name = "olivier"         # Get from user
     my_ip_address = "192.168.118.120"   # Get from user
     ip_addresses = ["192.168.118.45"] # Get from user; needed ??
-    nb_users = 10     # Get from user
+    nb_users = len(ip_addresses)+1
 
     user = User(name, my_ip_address)
 
@@ -81,14 +91,15 @@ def main():
         for ip_address in ip_addresses:
             user.network_node.connect_with_node(ip_address, 65432)
         time.sleep(1) # Waiting for everyone to connect before talking
-    
+    '''
     #waiting for everyone to share their pub key
     user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
     while len(user.comm_keys) < len(ip_addresses)+1:
         user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
         time.sleep(1)
-
+    '''
     user.personal_seed = random()
+    user.seeds.append(user.personal_seed)
     user.my_id = random(4)
 
     id_hash = sha256(user.my_id, encoder=nacl.encoding.HexEncoder)
@@ -96,7 +107,62 @@ def main():
     #shuffle(user.comm_keys)
     #send id + pubk + seed anonymously
     anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
+    user.network_node.send_to_nodes({"message" : b"conf" + id_hash + b":" + user.public_key_choice + b":" + user.personal_seed})
     
+    while(len(user.seeds) < nb_users):
+        time.sleep(1)
+        
+    user.master_seed = compile_seeds(user.seeds)
+    seed(int.from_bytes(user.master_seed[:4], 'big'))
+    
+    shuffle(user.ids)
+    print(user.ids)
+    
+    user.send_to_nodes({"message":b"seed" + user.master_seed})
+    
+    position = -1
+    for i in range(len(user.ids)):
+        if(user.id_hash == user.ids[i][0])
+            position = i
+            break
+            
+    if(position == -1):
+        print("ERROR OCCURED")
+        exit(-1)
+        
+    derangement = random_derangement(nb_users)
+    pos_to_choose = derangement[position]
+    key_to_use = user.ids[pos_to_choose][1]
+    
+    c = encrypt_message(b"chse" + user.my_id, rsa.PublicKey.load_pkcs1(user.public_key_choice))
+    #sign the message
+    #TODO
+    user.network_node.send_to_nodes(c)
+    user.choices.append(c[:4])
+    
+    while len(user.choices) < nb_users:
+        time.sleep(1)
+    
+    for cipher in user.choices:
+        status,plain = decrypt_message(cipher, rsa.PrivateKey.load_pkcs1(user.private_key_choice)
+        if status:
+            user.final_id = plain
+            break
+    final_id_hash = sha256(user.final_id, encoder=nacl.encoding.HexEncoder)
+    sig_key_check = None
+    for i in range(len(user.ids)):
+        if(final_id_hash == user.ids[i][0]):
+            sig_key_check = user.ids[i][1]
+            break
+    if(sig_key_check == None):
+        exit(-1)
+    #check signature
+    #TODO
+    print("FINAL RESULT : ", end='')
+    print(final_id_hash)
+
+    
+    '''        
     for _ in range(len(ip_addresses) + 1):
         #wait until we have all messages
         while len(user.annon_messages) < len(ip_addresses)+1:
@@ -142,7 +208,7 @@ def main():
     #at this point, we should have all messages decrypted
     print(user.annon_messages)
             
-            
+    '''        
     input()
     user.network_node.stop()
 

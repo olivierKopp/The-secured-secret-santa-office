@@ -50,6 +50,9 @@ class User:
         self.annon_messages = []
         self.annon_messages_tmp = []
         
+        self.ids = []
+        self.seeds = []
+        
         self.personnal_seed = 0
         self.master_seed = 0
         
@@ -57,6 +60,8 @@ class User:
         
         self.bits = 1024
         
+        self.choices = []
+        self.final_id = b''
 
 
 def generate_key_pair(user):
@@ -110,3 +115,22 @@ def anonymous_comm(user, message):
     print(ciphertext)
     user.network_node.send_to_nodes({"message" : (b"anon" + ciphertext).decode('latin-1')})
     #broadcast_message(user, b"anon" + ciphertext)
+    
+def compile_seeds(seeds):
+    res = b'\x00' * 32
+    for s in seeds:
+        res = bytes(a ^ b for a, b in zip(res, s))
+    return res
+    
+def random_derangement(n):
+    while True:
+        v = [i for i in range(n)]
+        for j in range(n - 1, -1, -1):
+            p = random.randint(0, j)
+            if v[p] == j:
+                break
+            else:
+                v[j], v[p] = v[p], v[j]
+        else:
+            if v[0] != 0:
+                return tuple(v)
