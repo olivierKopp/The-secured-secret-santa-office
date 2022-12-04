@@ -33,7 +33,7 @@ else the decrypted name is your pick => wipe the key pair
 6. encryption/decryption
 7. generate derangement
 '''
-from Crypto.PublicKey import ECC
+import rsa
 
 
 class User:
@@ -54,7 +54,7 @@ class User:
         
 
 
-def generate_key_pair(user, bits = 8196):
+def generate_key_pair(user, bits = 1024):
     (publicKey, privateKey) = rsa.newkeys(bits)
     user.private_key_choice = privateKey.save_pkcs1('PEM')
     user.public_key_choice = publicKey.save_pkcs1('PEM')
