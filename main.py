@@ -49,11 +49,11 @@ class SSSONode(Node):
                 self.user.annon_messages.append(message)
             case 'conf':
                 split_msg = message.split(b':')
-                if((split_msg[0], split_msg[1]) not in self.user.ids):
+                if((split_msg[0], split_msg[1], split_msg[3]) not in self.user.ids):
                     print("RECEIVED")
                     print(split_msg[1])
                     print(b64decode(split_msg[1]))
-                    self.user.ids.append((split_msg[0], split_msg[1]))
+                    self.user.ids.append((split_msg[0], split_msg[1], split_msg[3]))
                     self.user.seeds.append(split_msg[2])
                     self.user.annon_messages.append(message)
             case 'seed':
@@ -64,7 +64,7 @@ class SSSONode(Node):
             case _:
                 print(code)
                 raise NotImplementedError("Message code unknown")
-        print("node_message from " + connected_node.id + ": " + str(data))
+        #print("node_message from " + connected_node.id + ": " + str(data))
         
     def node_disconnect_with_outbound_node(self, connected_node):
         print("node wants to disconnect with oher outbound node: " + connected_node.id)
@@ -76,7 +76,7 @@ class SSSONode(Node):
 def main():
     name = "olivier"         # Get from user
     my_ip_address = "192.168.118.120"   # Get from user
-    ip_addresses = ["192.168.118.45"] # Get from user; needed ??
+    ip_addresses = ["192.168.118.45", "192.168.118.154"] # Get from user; needed ??
     nb_users = len(ip_addresses)+1
 
     user = User(name, my_ip_address)
@@ -90,11 +90,13 @@ def main():
     for ip_address in ip_addresses:
         user.network_node.connect_with_node(ip_address, 65432)
     
-    while not len(user.network_node.nodes_inbound) == len(ip_addresses):
-        #print(len(user.network_node.nodes_inbound))
+    count = 0
+    while not len(user.network_node.nodes_outbound) == len(ip_addresses) and count < 5:
+        print(len(user.network_node.nodes_outbound))
         for ip_address in ip_addresses:
             user.network_node.connect_with_node(ip_address, 65432)
         time.sleep(1) # Waiting for everyone to connect before talking
+        count += 1
     
     #waiting for everyone to share their pub key
     '''user.network_node.send_to_nodes({"message" : (b"pubk" + user.public_key_comm).decode()})
@@ -107,16 +109,17 @@ def main():
     user.my_id = random(4)
 
     id_hash = sha256(user.my_id, encoder=nacl.encoding.HexEncoder)
-    user.ids.append((id_hash, user.public_key_choice))
+    user.ids.append((id_hash, user.public_key_choice, name.encode()))
 
     #shuffle(user.comm_keys)
     #send id + pubk + seed anonymously
     #anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
-    payload = b"conf" + id_hash + b":" + b64encode(user.public_key_choice) + b":" + user.personal_seed
+    payload = b"conf" + id_hash + b":" + b64encode(user.public_key_choice) + b":" + user.personal_seed + b":" + name.encode()
     user.network_node.send_to_nodes({"message" : (payload).decode('latin-1')})
     
+    print(len(user.network_node.nodes_outbound))
     while(len(user.seeds) < nb_users):
-        user.network_node.send_to_nodes({"message" : (b"conf" + id_hash + b":" + b64encode(user.public_key_choice) + b":" + user.personal_seed).decode('latin-1')})
+        user.network_node.send_to_nodes({"message" : payload.decode('latin-1')})
         time.sleep(1)
         
     user.master_seed = compile_seeds(user.seeds)
@@ -167,8 +170,11 @@ def main():
     #TODO
     print("FINAL RESULT : ", end='')
     print(final_id_hash)
+    for i in user.ids:
+        if(i[0] == final_id_hash):
+            print(b"You have to give a gift to " + i[2])
+    print(id_hash)
         
-    input()
     user.network_node.stop()
 
 

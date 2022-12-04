@@ -74,12 +74,6 @@ def generate_key_pair(user):
     (publicKey, privateKey) = rsa.newkeys(user.bits)
     user.private_key_comm = privateKey.save_pkcs1('PEM')
     user.public_key_comm = publicKey.save_pkcs1('PEM')
-    print("comm keys : ")
-    print(user.private_key_comm)
-    print(user.public_key_comm)
-    print("choice keys : ")
-    print(user.private_key_choice)
-    print(user.public_key_choice)
 
 #def loadKeys(pub_key, priv_key):
 #    return rsa.PublicKey.load_pkcs1(pub_key), rsa.PrivateKey.load_pkcs1(priv_key)
@@ -107,13 +101,10 @@ def anonymous_comm(user, message):
         ciphertext = [encrypt_message(ciphertext[j], rsa.PublicKey.load_pkcs1(key)) for j in range(0, len(ciphertext))]
         #for c in ciphertext:
         #    print(len(c))
-        print(ciphertext)
         ciphertext = b''.join(ciphertext)
         
         #ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(key))
     user.annon_messages.append(ciphertext)
-    print("CIPHERTEXT : ", end='')
-    print(ciphertext)
     user.network_node.send_to_nodes({"message" : (b"anon" + ciphertext).decode('latin-1')})
     #broadcast_message(user, b"anon" + ciphertext)
     
