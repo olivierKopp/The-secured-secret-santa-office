@@ -26,12 +26,16 @@ class SSSONode(Node):
         print("outbound_node_disconnected: " + connected_node.id)
 
     def node_message(self, connected_node, data):
-        print("DATA")
-        data = data["message"]
+        #print("DATA")
         print(data)
-        print(len(data))
+        data = data["message"]
+        try:
+            data = data.encode()
+        except:
+            pass
+        #print(len(data))
         code = data[:4]
-        print(code)
+        #print(code)
         try:
             code = code.decode()
         except:
@@ -40,9 +44,9 @@ class SSSONode(Node):
 
         match code:
             case 'pubk':
-                if len(self.user.comm_keys) == 0:
+                self.user.comm_keys.append(message)
+                if len(self.user.comm_keys) == 1:
                     self.user.comm_keys.append(self.user.public_key_comm)
-                self.user.comm_keys.append(message.encode())
             case 'anon':
                 self.user.annon_messages.append(message)
             case _:
@@ -89,7 +93,7 @@ def main():
 
     id_hash = sha256(user.my_id, encoder=nacl.encoding.HexEncoder)
 
-    shuffle(user.comm_keys)
+    #shuffle(user.comm_keys)
     #send id + pubk + seed anonymously
     anonymous_comm(user, id_hash + user.public_key_choice + user.personal_seed)
     
@@ -106,19 +110,30 @@ def main():
         
         length = (user.bits//8)
         #try to decrypt every message and send the one we can decrypt to others
-        for i in range(user.annon_messages_tmp):
-            ciphertext = [user.annon_messages_tmp[i:i+length] for i in range(0, len(ciphertext), length)]
+        for i in range(len(user.annon_messages_tmp)):
+            ciphertext = [user.annon_messages_tmp[i][k:k+length] for k in range(0, len(user.annon_messages_tmp[i]), length)]
+            #print(ciphertext)
             
             for j in range(len(ciphertext)):
+                try:
+                    ciphertext[j] = ciphertext[j].encode()
+                except:
+                    pass
+                print(ciphertext[j])
+                print(user.private_key_comm)
+                print(user.comm_keys)
                 ret,plain = decrypt_message(ciphertext[j], rsa.PrivateKey.load_pkcs1(user.private_key_comm))
                 if(not ret):
+                    print(i)
+                    print(j)
                     break
                 ciphertext[j] = plain
-            else
+            else:
                 #we send to everyone the message we could decrypt
                 ciphertext = b''.join(ciphertext)
+                print(ciphertext)
                 user.annon_messages.append(ciphertext)
-                user.network_node.send_to_nodes(b"annon" + ciphertext)
+                user.network_node.send_to_nodes({"message" : (b"annon" + ciphertext)})
 
     
     #wait until we have all messages

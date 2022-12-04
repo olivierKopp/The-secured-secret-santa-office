@@ -83,6 +83,7 @@ def encrypt_message(message, pub_key):
     
 def decrypt_message(ciphertext, priv_key):
     try:
+        #print("Decryption OK")
         return True,rsa.decrypt(ciphertext, priv_key)
     except:
         print("FAIL TO DECRYPT")
@@ -97,7 +98,10 @@ def anonymous_comm(user, message):
     for key in user.comm_keys:
         ciphertext = [ciphertext[i:i+length] for i in range(0, len(ciphertext), length)]
         #ciphertext = encrypt_message(ciphertext[0], rsa.PublicKey.load_pkcs1(key))
-        ciphertext = [encrypt_message(ciphertext[i], rsa.PublicKey.load_pkcs1(key)) for i in range(0, len(ciphertext))]
+        ciphertext = [encrypt_message(ciphertext[j], rsa.PublicKey.load_pkcs1(key)) for j in range(0, len(ciphertext))]
+        #for c in ciphertext:
+        #    print(len(c))
+        print(ciphertext)
         ciphertext = b''.join(ciphertext)
         
         #ciphertext = encrypt_message(ciphertext, rsa.PublicKey.load_pkcs1(key))
